@@ -151,12 +151,12 @@ jobs:
           path: |
             ~/.cache/solana/
             ~/.local/share/solana/
-          key: solana-${{ runner.os }}-v1.9.4
+          key: solana-${{ runner.os }}-v1.18.22
 
       - name: Install Solana
         if: steps.cache-solana.outputs.cache-hit != 'true'
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v1.9.4/install)"
+          sh -c "$(curl -sSfL https://release.solana.com/v1.18.22/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
       - name: Add Solana to PATH
