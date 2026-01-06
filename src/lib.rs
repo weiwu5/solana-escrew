@@ -143,11 +143,7 @@ impl EscrowState {
 /// Process Initialize instruction
 ///
 /// Creates an escrow and transfers SOL from initializer to escrow account
-fn process_initialize(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    amount: u64,
-) -> ProgramResult {
+fn process_initialize(program_id: &Pubkey, accounts: &[AccountInfo], amount: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
     let initializer = next_account_info(account_info_iter)?;
@@ -349,7 +345,11 @@ fn process_cancel(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
     let mut escrow_data = escrow_account.try_borrow_mut_data()?;
     escrow_data[40] = 0; // Set is_initialized to false
 
-    msg!("Escrow cancelled: {} SOL refunded to {}", refund_amount, initializer.key);
+    msg!(
+        "Escrow cancelled: {} SOL refunded to {}",
+        refund_amount,
+        initializer.key
+    );
 
     Ok(())
 }
@@ -371,11 +371,8 @@ mod tests {
         let initializer = Keypair::new();
         let escrow_keypair = Keypair::new();
 
-        let mut program_test = ProgramTest::new(
-            "solana_escrow",
-            program_id,
-            processor!(process_instruction),
-        );
+        let mut program_test =
+            ProgramTest::new("solana_escrow", program_id, processor!(process_instruction));
 
         // Fund initializer account
         program_test.add_account(
@@ -407,14 +404,8 @@ mod tests {
             &[solana_program::instruction::Instruction {
                 program_id,
                 accounts: vec![
-                    solana_program::instruction::AccountMeta::new(
-                        initializer.pubkey(),
-                        true,
-                    ),
-                    solana_program::instruction::AccountMeta::new(
-                        escrow_keypair.pubkey(),
-                        false,
-                    ),
+                    solana_program::instruction::AccountMeta::new(initializer.pubkey(), true),
+                    solana_program::instruction::AccountMeta::new(escrow_keypair.pubkey(), false),
                     solana_program::instruction::AccountMeta::new_readonly(
                         solana_program::system_program::id(),
                         false,
@@ -447,11 +438,8 @@ mod tests {
         let initializer = Keypair::new();
         let escrow_keypair = Keypair::new();
 
-        let mut program_test = ProgramTest::new(
-            "solana_escrow",
-            program_id,
-            processor!(process_instruction),
-        );
+        let mut program_test =
+            ProgramTest::new("solana_escrow", program_id, processor!(process_instruction));
 
         // Fund initializer
         program_test.add_account(
@@ -497,14 +485,8 @@ mod tests {
             &[solana_program::instruction::Instruction {
                 program_id,
                 accounts: vec![
-                    solana_program::instruction::AccountMeta::new(
-                        initializer.pubkey(),
-                        true,
-                    ),
-                    solana_program::instruction::AccountMeta::new(
-                        escrow_keypair.pubkey(),
-                        false,
-                    ),
+                    solana_program::instruction::AccountMeta::new(initializer.pubkey(), true),
+                    solana_program::instruction::AccountMeta::new(escrow_keypair.pubkey(), false),
                     solana_program::instruction::AccountMeta::new_readonly(
                         solana_program::system_program::id(),
                         false,
@@ -546,11 +528,8 @@ mod tests {
         let taker = Keypair::new();
         let escrow_keypair = Keypair::new();
 
-        let mut program_test = ProgramTest::new(
-            "solana_escrow",
-            program_id,
-            processor!(process_instruction),
-        );
+        let mut program_test =
+            ProgramTest::new("solana_escrow", program_id, processor!(process_instruction));
 
         // Fund accounts
         program_test.add_account(
@@ -612,14 +591,8 @@ mod tests {
                 program_id,
                 accounts: vec![
                     solana_program::instruction::AccountMeta::new(taker.pubkey(), true),
-                    solana_program::instruction::AccountMeta::new(
-                        initializer.pubkey(),
-                        false,
-                    ),
-                    solana_program::instruction::AccountMeta::new(
-                        escrow_keypair.pubkey(),
-                        false,
-                    ),
+                    solana_program::instruction::AccountMeta::new(initializer.pubkey(), false),
+                    solana_program::instruction::AccountMeta::new(escrow_keypair.pubkey(), false),
                     solana_program::instruction::AccountMeta::new_readonly(
                         solana_program::system_program::id(),
                         false,
