@@ -1,9 +1,12 @@
 [package]
-name = "bpf-program-template"
-version = "0.1.0"
+name = "solana-escrow"
+version = "1.0.0"
 edition = "2021"
 license = "WTFPL"
 publish = false
+description = "A secure escrow program for atomic SOL exchanges on Solana"
+repository = "https://github.com/weiwu5/solana-escrew"
+keywords = ["solana", "escrow", "blockchain", "smart-contract"]
 
 [dependencies]
 solana-program = "=1.9.4"
