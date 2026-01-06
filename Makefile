@@ -1,13 +1,13 @@
-.PHONY: help build build-bpf test test-bpf clean fmt lint check all install deploy
+.PHONY: help build build-sbf test test-sbf clean fmt lint check all install deploy
 
 # Default target
 help:
 	@echo "Solana BPF Program Template - Available Commands:"
 	@echo ""
 	@echo "  make build       - Build the program for native testing"
-	@echo "  make build-bpf   - Build the program for BPF deployment"
+	@echo "  make build-sbf   - Build the program for BPF deployment"
 	@echo "  make test        - Run native tests"
-	@echo "  make test-bpf    - Run BPF integration tests"
+	@echo "  make test-sbf    - Run BPF integration tests"
 	@echo "  make check       - Run cargo check (fast compile check)"
 	@echo "  make fmt         - Format code with rustfmt"
 	@echo "  make lint        - Run clippy linter"
@@ -23,9 +23,9 @@ build:
 	cargo build
 
 # Build for BPF deployment
-build-bpf:
+build-sbf:
 	@echo "Building for BPF deployment..."
-	cargo build-bpf
+	cargo build-sbf
 
 # Build release version
 build-release:
@@ -38,9 +38,9 @@ test:
 	cargo test
 
 # Run BPF integration tests
-test-bpf:
+test-sbf:
 	@echo "Running BPF integration tests..."
-	cargo test-bpf
+	cargo test-sbf
 
 # Fast compile check
 check:
@@ -114,7 +114,7 @@ deploy-dev:
 	@solana config get
 	@echo ""
 	@echo "Building BPF program..."
-	cargo build-bpf
+	cargo build-sbf
 	@echo ""
 	@echo "Deploying program..."
 	solana program deploy target/deploy/bpf_program_template.so

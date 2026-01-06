@@ -1,250 +1,414 @@
-# Solana BPF Program Template
+# Solana Escrow Program
 
-A minimal, production-ready template for building Solana blockchain programs (smart contracts) using Rust and the Solana Program SDK.
+A secure, trustless escrow service for atomic SOL exchanges between two parties on the Solana blockchain.
 
 ## Overview
 
-This template provides a clean starting point for developing Solana programs that run on the Berkley Packet Filter (BPF) runtime. It includes:
+This program implements a production-ready escrow system that enables safe peer-to-peer exchanges without requiring trust between parties. When the initializer deposits SOL into escrow, a taker can complete the exchange by sending an equal amount, triggering automatic fund distribution.
 
-- ✅ Basic program structure with entrypoint
-- ✅ Unit and integration tests
-- ✅ BPF compilation support
-- ✅ Development utilities and scripts
+### Features
 
-## Prerequisites
+- ✅ Trustless SOL exchanges
+- ✅ Atomic transactions (all-or-nothing)
+- ✅ Cancel and refund functionality
+- ✅ Secure state management
+- ✅ Comprehensive test coverage
+- ✅ Production-ready security checks
 
-Before you begin, ensure you have the following installed:
+## How It Works
 
-### 1. Rust
-Install Rust using rustup:
+### The Escrow Flow
+
+```
+1. Initialize
+   ├─ Initializer deposits SOL into escrow account
+   ├─ Escrow state is created and marked as active
+   └─ Funds are locked until exchange or cancellation
+
+2. Exchange (Happy Path)
+   ├─ Taker sends equal amount of SOL to initializer
+   ├─ Taker receives the escrowed SOL
+   ├─ Escrow is marked as completed
+   └─ Both parties receive their funds atomically
+
+3. Cancel (Alternative Path)
+   ├─ Initializer decides to cancel
+   ├─ Escrowed SOL is returned to initializer
+   └─ Escrow is closed
+```
+
+### Participants
+
+- **Initializer**: Creates the escrow and deposits SOL
+- **Taker**: Completes the exchange by matching the deposited amount
+- **Escrow Account**: Holds the deposited SOL securely
+
+## Quick Start
+
+### Prerequisites
+
+Before you begin, ensure you have:
+
+#### 1. Rust
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 ```
 
-Verify installation:
-```bash
-rustc --version
-cargo --version
-```
-
-### 2. Solana CLI Tools
-Install Solana CLI tools:
+#### 2. Solana CLI Tools
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
-```
-
-Add Solana to your PATH (add this to your `~/.bashrc` or `~/.zshrc`):
-```bash
 export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-```
-
-Verify installation:
-```bash
-solana --version
-solana-test-validator --version
-```
-
-### 3. Additional Tools (Optional but Recommended)
-```bash
-# For better development experience
-cargo install cargo-watch  # Auto-rebuild on file changes
-```
-
-## Quick Start
-
-### Clone and Setup
-```bash
-git clone <your-repo-url>
-cd solana-escrew
 ```
 
 ### Build the Program
 
-#### Native Build (for testing)
 ```bash
+# Native build (for testing)
 cargo build
-```
 
-#### BPF Build (for deployment)
-```bash
-cargo build-bpf
-```
-
-The compiled BPF program will be located at:
-```
-target/deploy/bpf_program_template.so
+# BPF build (for deployment)
+cargo build-sbf
 ```
 
 ### Run Tests
 
-#### Unit Tests
 ```bash
+# Run all tests
 cargo test
-```
 
-#### BPF Integration Tests
-```bash
-cargo test-bpf
-```
+# Run with output
+cargo test -- --nocapture
 
-This will:
-1. Build the program for BPF
-2. Start a local test validator
-3. Deploy the program
-4. Run integration tests
-
-## Project Structure
-
-```
-solana-escrew/
-├── src/
-│   └── lib.rs              # Main program entrypoint and logic
-├── tests/
-│   └── integration.rs      # BPF integration tests
-├── scripts/
-│   ├── patch.crates-io.sh  # Local Solana monorepo development
-│   └── update-solana-dependencies.sh  # Update Solana versions
-├── Cargo.toml              # Rust package manifest
-├── README.md               # This file
-└── .gitignore             # Git ignore rules
-```
-
-## Development Workflow
-
-### 1. Develop Your Program
-Edit `src/lib.rs` to implement your program logic. The entrypoint function receives:
-- `program_id`: Your program's public key
-- `accounts`: Array of accounts passed to the program
-- `instruction_data`: Arbitrary instruction data
-
-### 2. Write Tests
-- Add unit tests in `src/lib.rs` under `#[cfg(test)]`
-- Add integration tests in `tests/integration.rs`
-
-### 3. Build and Test
-```bash
-# Quick development cycle
-cargo build && cargo test
-
-# Full BPF test
-cargo build-bpf && cargo test-bpf
-```
-
-### 4. Deploy to Devnet (Optional)
-```bash
-# Configure Solana CLI for devnet
-solana config set --url https://api.devnet.solana.com
-
-# Airdrop SOL for deployment
-solana airdrop 2
-
-# Deploy your program
-solana program deploy target/deploy/bpf_program_template.so
+# Run specific test
+cargo test test_initialize_escrow
 ```
 
 ## Program Architecture
 
-This template uses Solana's `entrypoint!` macro to define the program's entry point. When a transaction calls your program, Solana executes `process_instruction()`.
+### Instructions
 
-### Current Implementation
-The template includes a minimal implementation that:
-- Logs the program ID, number of accounts, and instruction data
-- Returns `Ok(())` without performing any operations
+The program supports three instructions:
 
-### Extending the Template
+#### 1. Initialize
+Creates a new escrow and locks SOL.
 
-To build a real program, you'll typically:
+**Accounts:**
+- `[signer, writable]` Initializer's account
+- `[writable]` Escrow state account (must be owned by program)
+- `[]` System program
 
-1. **Define instruction types** (e.g., Initialize, Transfer, Update)
-2. **Parse instruction data** to determine which instruction to execute
-3. **Validate accounts** to ensure they meet your requirements
-4. **Perform operations** (read/write account data, transfer SOL, etc.)
-5. **Return results** or error codes
+**Data:**
+- `tag: u8` - Instruction discriminator (0 for Initialize)
+- `amount: u64` - Amount of SOL to deposit (in lamports)
 
-Example structure:
+#### 2. Exchange
+Completes the escrow by exchanging SOL between parties.
+
+**Accounts:**
+- `[signer, writable]` Taker's account
+- `[writable]` Initializer's account
+- `[writable]` Escrow state account
+- `[]` System program
+
+**Data:**
+- `tag: u8` - Instruction discriminator (1 for Exchange)
+
+#### 3. Cancel
+Cancels the escrow and refunds the initializer.
+
+**Accounts:**
+- `[signer, writable]` Initializer's account
+- `[writable]` Escrow state account
+- `[]` System program
+
+**Data:**
+- `tag: u8` - Instruction discriminator (2 for Cancel)
+
+### State Structure
+
 ```rust
-fn process_instruction(
-    program_id: &Pubkey,
-    accounts: &[AccountInfo],
-    instruction_data: &[u8],
-) -> ProgramResult {
-    // Parse instruction
-    let instruction = MyInstruction::unpack(instruction_data)?;
-
-    // Route to handler
-    match instruction {
-        MyInstruction::Initialize { .. } => process_initialize(accounts, ...),
-        MyInstruction::Transfer { .. } => process_transfer(accounts, ...),
-    }
+pub struct EscrowState {
+    pub initializer_pubkey: Pubkey,  // 32 bytes
+    pub initializer_amount: u64,     // 8 bytes
+    pub is_initialized: bool,        // 1 byte
 }
+// Total: 41 bytes
+```
+
+### Security Features
+
+1. **Signature Verification**: All instructions verify signer authority
+2. **Ownership Checks**: Escrow account ownership is validated
+3. **State Validation**: Prevents double-initialization and unauthorized access
+4. **Amount Validation**: Ensures positive amounts and sufficient balances
+5. **Rent Exemption**: Maintains minimum balance for rent exemption
+6. **Atomic Operations**: All transfers succeed or fail together
+
+## Development
+
+### Using the Makefile
+
+```bash
+# Show all available commands
+make help
+
+# Build and test
+make all
+
+# Quick development cycle
+make dev
+
+# Format code
+make fmt
+
+# Run linter
+make lint
+
+# Clean build artifacts
+make clean
+```
+
+### Project Structure
+
+```
+solana-escrew/
+├── src/
+│   └── lib.rs              # Main escrow program implementation
+├── tests/
+│   └── integration.rs      # BPF integration tests
+├── Cargo.toml              # Rust package manifest
+├── Makefile                # Development commands
+└── README.md               # This file
+```
+
+## Deployment
+
+### Deploy to Devnet
+
+```bash
+# Configure Solana CLI for devnet
+solana config set --url https://api.devnet.solana.com
+
+# Create a new keypair (if needed)
+solana-keygen new
+
+# Airdrop SOL for deployment
+solana airdrop 2
+
+# Build the program
+cargo build-sbf
+
+# Deploy
+solana program deploy target/deploy/bpf_program_template.so
+```
+
+The deployment will output your program ID. Save this for interacting with your program!
+
+### Deploy to Mainnet
+
+```bash
+# Configure for mainnet-beta
+solana config set --url https://api.mainnet-beta.solana.com
+
+# Deploy (costs real SOL!)
+solana program deploy target/deploy/bpf_program_template.so
+```
+
+**⚠️ Warning**: Deploying to mainnet costs real SOL. Ensure thorough testing on devnet first!
+
+## Usage Examples
+
+### Creating an Escrow (Client-side TypeScript example)
+
+```typescript
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+} from '@solana/web3.js';
+
+// Initialize escrow with 1 SOL
+const amount = 1 * LAMPORTS_PER_SOL;
+const instructionData = Buffer.alloc(9);
+instructionData.writeUInt8(0, 0); // Initialize instruction
+instructionData.writeBigUInt64LE(BigInt(amount), 1);
+
+const transaction = new Transaction().add({
+  keys: [
+    { pubkey: initializer.publicKey, isSigner: true, isWritable: true },
+    { pubkey: escrowAccount.publicKey, isSigner: false, isWritable: true },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ],
+  programId: escrowProgramId,
+  data: instructionData,
+});
+```
+
+### Exchange
+
+```typescript
+// Complete the exchange
+const instructionData = Buffer.alloc(1);
+instructionData.writeUInt8(1, 0); // Exchange instruction
+
+const transaction = new Transaction().add({
+  keys: [
+    { pubkey: taker.publicKey, isSigner: true, isWritable: true },
+    { pubkey: initializer.publicKey, isSigner: false, isWritable: true },
+    { pubkey: escrowAccount.publicKey, isSigner: false, isWritable: true },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ],
+  programId: escrowProgramId,
+  data: instructionData,
+});
+```
+
+### Cancel
+
+```typescript
+// Cancel escrow and get refund
+const instructionData = Buffer.alloc(1);
+instructionData.writeUInt8(2, 0); // Cancel instruction
+
+const transaction = new Transaction().add({
+  keys: [
+    { pubkey: initializer.publicKey, isSigner: true, isWritable: true },
+    { pubkey: escrowAccount.publicKey, isSigner: false, isWritable: true },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ],
+  programId: escrowProgramId,
+  data: instructionData,
+});
+```
+
+## Testing
+
+The program includes comprehensive tests:
+
+### Unit Tests
+- Instruction unpacking
+- State serialization/deserialization
+- Business logic validation
+
+### Integration Tests
+- Full initialize-exchange flow
+- Cancel and refund flow
+- Error cases and edge conditions
+
+Run tests with:
+```bash
+cargo test
 ```
 
 ## Common Commands
 
 ```bash
-# Build for native testing
-cargo build
+# Build
+cargo build                  # Native build
+cargo build-sbf             # BPF build
+cargo build --release       # Release build
 
-# Run native tests
-cargo test
+# Test
+cargo test                   # All tests
+cargo test --nocapture      # With output
+cargo test test_initialize  # Specific test
 
-# Build for BPF (blockchain deployment)
-cargo build-bpf
+# Development
+cargo check                  # Fast compile check
+cargo fmt                    # Format code
+cargo clippy                 # Lint code
 
-# Run BPF integration tests
-cargo test-bpf
-
-# Check code without building
-cargo check
-
-# Format code
-cargo fmt
-
-# Lint code
-cargo clippy
-
-# Watch mode (requires cargo-watch)
-cargo watch -x build
+# Using Makefile
+make build                   # Build native
+make build-sbf              # Build BPF
+make test                    # Run tests
+make all                     # Format, lint, build, test
 ```
 
 ## Troubleshooting
 
 ### Build Errors
 
-**Error: "solana-program version mismatch"**
-- Ensure your Solana CLI version matches the SDK version in `Cargo.toml`
-- Run `scripts/update-solana-dependencies.sh` to update dependencies
+**"solana-program version mismatch"**
+- Ensure Solana CLI version matches SDK version in Cargo.toml
+- Update dependencies: `cargo update`
 
-**Error: "cargo: command not found"**
-- Ensure Rust is installed and in your PATH
-- Run `source $HOME/.cargo/env`
+**"cargo: command not found"**
+- Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- Add to PATH: `source $HOME/.cargo/env`
 
-### Test Errors
+### Runtime Errors
 
-**Error: "test-bpf requires BPF build"**
-- Run `cargo build-bpf` before `cargo test-bpf`
+**"Insufficient funds"**
+- Escrow balance must exceed rent-exempt minimum
+- Ensure enough SOL for transaction fees
 
-**Error: "Connection refused" during tests**
-- The test validator may not have started properly
-- Check if port 8899 is available
-- Try running tests again
+**"Account already initialized"**
+- Escrow account is already in use
+- Use a new account or cancel existing escrow
+
+**"Only initializer can cancel"**
+- Only the account that created the escrow can cancel it
+- Verify signer matches initializer
+
+## Security Considerations
+
+### Auditing
+
+This program demonstrates Solana development practices but should undergo professional security auditing before mainnet deployment with significant funds.
+
+### Best Practices Implemented
+
+1. ✅ Input validation on all instructions
+2. ✅ Ownership and signer verification
+3. ✅ Proper error handling
+4. ✅ Rent-exemption maintenance
+5. ✅ State machine integrity
+6. ✅ No arithmetic overflows (using checked operations where needed)
+
+### Known Limitations
+
+- **Fixed exchange rate**: Currently 1:1 exchange ratio
+- **No partial fills**: Must exchange entire amount
+- **No timeout**: Escrows don't automatically expire
+- **SOL only**: Doesn't support SPL tokens yet
+
+## Future Enhancements
+
+Potential improvements for production use:
+
+- [ ] SPL token support
+- [ ] Custom exchange ratios
+- [ ] Time-locked escrows with automatic expiration
+- [ ] Partial exchange amounts
+- [ ] Multi-party escrows (more than 2 participants)
+- [ ] Escrow marketplace UI
+- [ ] Program Derived Address (PDA) for escrow accounts
 
 ## Resources
 
 ### Solana Documentation
-- [Solana Documentation](https://docs.solana.com/)
+- [Solana Docs](https://docs.solana.com/)
 - [Solana Program Library](https://spl.solana.com/)
 - [Solana Cookbook](https://solanacookbook.com/)
-- [Anchor Framework](https://www.anchor-lang.com/) - Higher-level framework
+- [Anchor Framework](https://www.anchor-lang.com/)
 
-### Learning Resources
+### Learning
 - [Solana Development Course](https://www.soldev.app/)
-- [Solana Program Examples](https://github.com/solana-labs/solana-program-library)
+- [Program Examples](https://github.com/solana-labs/solana-program-library)
+- [Escrow Tutorial](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/)
+
+### Community
+- [Solana Stack Exchange](https://solana.stackexchange.com/)
+- [Solana Discord](https://discord.gg/solana)
+- [Solana Forum](https://forum.solana.com/)
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
@@ -252,15 +416,15 @@ WTFPL (Do What The Fuck You Want To Public License)
 
 This is free and unencumbered software released into the public domain.
 
-## Next Steps
+## Acknowledgments
 
-1. **Customize this template** for your use case
-2. **Implement your program logic** in `src/lib.rs`
-3. **Add comprehensive tests** in `tests/`
-4. **Update this README** with your program's specific documentation
-5. **Deploy to devnet** for testing
-6. **Audit and deploy to mainnet** when ready
+This implementation is inspired by:
+- [Paul X's Escrow Tutorial](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/)
+- Solana Program Library patterns
+- Community feedback and best practices
 
 ---
 
-**Need help?** Check the [Solana Stack Exchange](https://solana.stackexchange.com/) or [Solana Discord](https://discord.gg/solana).
+**Built with ❤️ for the Solana ecosystem**
+
+For questions or issues, please open a GitHub issue or reach out on Discord.
