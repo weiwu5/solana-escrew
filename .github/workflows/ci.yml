@@ -181,7 +181,7 @@ jobs:
           key: ${{ runner.os }}-bpf-build-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build BPF
-        run: cargo build-bpf
+        run: cargo build-sbf
 
       - name: Upload BPF artifact
         uses: actions/upload-artifact@v4

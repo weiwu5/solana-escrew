@@ -68,7 +68,7 @@ export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
 cargo build
 
 # BPF build (for deployment)
-cargo build-bpf
+cargo build-sbf
 ```
 
 ### Run Tests
@@ -197,7 +197,7 @@ solana-keygen new
 solana airdrop 2
 
 # Build the program
-cargo build-bpf
+cargo build-sbf
 
 # Deploy
 solana program deploy target/deploy/bpf_program_template.so
@@ -308,7 +308,7 @@ cargo test
 ```bash
 # Build
 cargo build                  # Native build
-cargo build-bpf             # BPF build
+cargo build-sbf             # BPF build
 cargo build --release       # Release build
 
 # Test
@@ -323,7 +323,7 @@ cargo clippy                 # Lint code
 
 # Using Makefile
 make build                   # Build native
-make build-bpf              # Build BPF
+make build-sbf              # Build BPF
 make test                    # Run tests
 make all                     # Format, lint, build, test
 ```

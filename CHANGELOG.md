@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-01-06
 
+### Fixed
+- Updated all build commands from deprecated `cargo build-bpf` to `cargo build-sbf`
+- Updated test commands from `cargo test-bpf` to `cargo test-sbf`
+- Fixed GitHub Actions CI pipeline to use modern Solana build commands
+
 ### Added - Escrow Program Implementation
 - Complete SOL escrow program for trustless atomic exchanges
 - Three core instructions: Initialize, Exchange, and Cancel
