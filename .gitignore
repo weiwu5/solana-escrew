@@ -1,3 +1,48 @@
+# Solana specific
 /*-dump.txt
 /*.so
+/test-ledger/
+/dump.txt
+
+# Rust build artifacts
 /target/
+**/*.rs.bk
+*.pdb
+
+# Cargo lock (uncomment if this is an application, keep for libraries)
+# Cargo.lock
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# OS files
+Thumbs.db
+
+# Solana keypairs and configs (IMPORTANT: never commit private keys!)
+*.json
+!package.json
+!tsconfig.json
+/id.json
+/deployer.json
+*.keypair
+
+# Testing
+/test-results/
+/.cache/
+
+# Temporary files
+*.tmp
+*.temp
